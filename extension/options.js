@@ -26,7 +26,11 @@ let signinFromLink = new URLSearchParams(location.hash.slice(1)).get("signin");
 
 function connectPort() {
   port = DEMO ? demo.connect() : chrome.runtime.connect({ name: "options" });
-  port.onMessage.addListener((msg) => msg.type === "state" && render(msg.state));
+  port.onMessage.addListener((msg) => {
+    if (msg.type === "state") render(msg.state);
+    else if (msg.type === "mod_file") download(msg.id, msg.content);
+    else if (msg.type === "mod_imported") imported(msg);
+  });
   port.postMessage({ type: "color_scheme", dark: matchMedia("(prefers-color-scheme: dark)").matches });
   // The service worker was suspended or reloaded; reconnect.
   port.onDisconnect.addListener(() => setTimeout(connectPort, 500));
@@ -355,8 +359,9 @@ $("add-list").addEventListener("click", (e) => {
 
 // ---------- mods ----------
 
-/** The site a mod is for, from its first match pattern. */
+/** The site a mod is for: as Agent Bridge worked it out, or from its first match pattern. */
 function siteOf(mod) {
+  if (mod.site) return mod.site;
   const host = /^[^:]+:\/\/([^/]*)/.exec(mod.matches[0] ?? "")?.[1] ?? "";
   const site = host.replace(/^\*\./, "").replace(/^www\./, "");
   return !site || site === "*" ? "All sites" : site;
@@ -366,7 +371,7 @@ let modsKey = "";
 
 function renderMods(s) {
   const mods = s.mods ?? [];
-  $("mods-section").hidden = !mods.length;
+  $("mods-section").hidden = !s.connected && !mods.length;
   const key = JSON.stringify([mods, confirming]);
   if (key === modsKey) return;
   modsKey = key;
@@ -391,9 +396,10 @@ function renderMods(s) {
             ? `<div class="confirm" data-mod="${esc(m.id)}"><div class="main"><span class="name">Delete “${esc(m.name)}”?</span><span class="sub">It stops running on ${esc(siteOf(m))}.</span></div>` +
               `<div class="actions"><button type="button" class="btn quiet" data-do="confirm-cancel">Cancel</button><button type="button" class="btn danger" data-do="delete">Delete</button></div></div>`
             : `<div class="row" data-mod="${esc(m.id)}"><div class="main"><span class="name">${esc(m.name)}</span>` +
-              `<span class="sub${m.error ? " danger" : ""}" title="${esc(m.error ?? m.description ?? "")}">${esc(m.error ?? m.description ?? m.id)}</span></div>` +
+              `<span class="sub${m.error ? " danger" : ""}" title="${esc([m.error ?? m.description, ...(m.warnings ?? []), m.id].filter(Boolean).join("\n"))}">${esc(m.error ?? m.description ?? m.id)}</span></div>` +
               (m.error ? "" : `<button type="button" class="switch lg" role="switch" aria-checked="${m.enabled}" aria-label="${esc(m.name)}" data-do="toggle"></button>`) +
-              `<button type="button" class="icon-btn lg" data-do="reveal" aria-label="Open ${esc(m.name)}’s folder" title="Open folder">${icon("folder-open")}</button>` +
+              `<button type="button" class="icon-btn lg" data-do="export" aria-label="Export ${esc(m.name)}" title="Export">${icon("download")}</button>` +
+              `<button type="button" class="icon-btn lg" data-do="reveal" aria-label="Show ${esc(m.name)} in its folder" title="Show in folder">${icon("folder-open")}</button>` +
               `<button type="button" class="icon-btn lg" data-do="ask-delete" aria-label="Delete ${esc(m.name)}" title="Delete">${icon("trash-2")}</button></div>`,
         )
         .join("");
@@ -413,6 +419,7 @@ $("mods").addEventListener("click", (e) => {
     return post({ type: "mod_set_enabled", id, enabled });
   }
   if (what === "reveal") return post({ type: "mod_reveal", id });
+  if (what === "export") return post({ type: "mod_export", id });
   if (what === "ask-delete") confirming = `mod:${id}`;
   else if (what === "confirm-cancel") confirming = null;
   else if (what === "delete") {
@@ -421,3 +428,124 @@ $("mods").addEventListener("click", (e) => {
   }
   rerender();
 });
+
+// ---------- import and export ----------
+// Mods are userscripts (.user.js) and UserCSS styles (.user.css), the files
+// Tampermonkey, Violentmonkey and Stylus use, so they move both ways as is.
+
+/** Save a mod's file (exporting it). */
+function download(name, content) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content], { type: "text/plain" }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+let importSeq = 0;
+const importing = new Map(); // request id -> { name, done(result) }
+
+function importMod(fileName, content, done) {
+  const requestId = `i${++importSeq}`;
+  importing.set(requestId, { name: fileName, done });
+  post({ type: "mod_import", requestId, fileName, content });
+}
+
+function imported(msg) {
+  const req = importing.get(msg.requestId);
+  importing.delete(msg.requestId);
+  req?.done(msg);
+}
+
+function showModsStatus(lines) {
+  $("mods-status").innerHTML = lines.map((l) => `<span class="error-text">${esc(l)}</span>`).join("");
+}
+
+$("import-btn").addEventListener("click", () => $("import-file").click());
+$("import-file").addEventListener("change", async (e) => {
+  const files = [...e.target.files];
+  e.target.value = "";
+  const errors = [];
+  showModsStatus([]);
+  for (const file of files) {
+    importMod(file.name, await file.text(), (r) => {
+      if (r.error) errors.push(`Couldn’t import ${file.name}: ${r.error}`);
+      showModsStatus(errors);
+    });
+  }
+});
+
+// Opening a .user.js / .user.css URL brings you here: options.html?install=<url>
+const installUrl = new URLSearchParams(location.search).get("install");
+$("install-close").addEventListener("click", () => $("install-dialog").close());
+
+/** The header fields worth showing before installing (Agent Bridge does the real parsing). */
+function previewOf(text) {
+  const js = /==UserScript==([\s\S]*?)==\/UserScript==/.exec(text);
+  const block = js ?? /==UserStyle==([\s\S]*?)==\/UserStyle==/.exec(text);
+  if (!block) return null;
+  const entries = [...block[1].matchAll(/^\s*(?:\/\/)?\s*@([\w:.-]+)(?:[ \t]+(.*?))?\s*$/gm)].map((m) => [m[1], m[2] ?? ""]);
+  const get = (k) => entries.find((e) => e[0] === k)?.[1];
+  const all = (k) => entries.filter((e) => e[0] === k).map((e) => e[1]);
+  const sites = js
+    ? [...all("match"), ...all("include")]
+    : [...text.matchAll(/(?:domain|url-prefix|url|regexp)\(\s*["']?([^"')]*)/g)].map((m) => m[1]);
+  return {
+    name: get("name"),
+    description: get("description"),
+    version: get("version"),
+    sites: [...new Set(sites)],
+    grants: all("grant").flatMap((g) => g.split(/\s+/)).filter((g) => g && g !== "none"),
+    connects: all("connect"),
+  };
+}
+
+function renderInstall(html) {
+  $("install-body").innerHTML = html;
+}
+
+async function offerInstall(url) {
+  const fileName = decodeURIComponent(new URL(url).pathname.split("/").pop() || "");
+  $("install-dialog").showModal();
+  renderInstall(`<p class="muted">Loading ${esc(fileName)}…</p>`);
+  let text;
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    text = await res.text();
+  } catch (e) {
+    return renderInstall(`<span class="error-text">Couldn’t load ${esc(url)}: ${esc(e.message)}</span>`);
+  }
+  const p = previewOf(text);
+  if (!p) return renderInstall(`<span class="error-text">${esc(fileName)} isn’t a userscript or a UserCSS style.</span>`);
+  const list = (xs, n = 6) => esc(xs.slice(0, n).join(", ")) + (xs.length > n ? ` and ${xs.length - n} more` : "");
+  const rows = [
+    p.version && ["Version", esc(p.version)],
+    ["Runs on", p.sites.length ? list(p.sites) : "Every site"],
+    p.grants.length && ["Uses", list(p.grants, 10)],
+    p.connects.length && ["Can reach", list(p.connects)],
+    ["From", esc(new URL(url).host)],
+  ].filter(Boolean);
+  const show = (error = "") =>
+    renderInstall(
+      `<div><div class="name">${esc(p.name || fileName)}</div>${p.description ? `<p class="muted">${esc(p.description)}</p>` : ""}</div>` +
+        `<dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>` +
+        (error ? `<span class="error-text">${esc(error)}</span>` : "") +
+        `<div class="actions"><button type="button" class="btn quiet" data-do="cancel">Cancel</button><button type="button" class="btn primary" data-do="install">Install</button></div>`,
+    );
+  show();
+  $("install-body").onclick = (e) => {
+    const what = e.target.closest("[data-do]")?.dataset.do;
+    if (what === "cancel") $("install-dialog").close();
+    if (what !== "install") return;
+    if (!state?.connected) return show("Agent Bridge isn’t running.");
+    e.target.disabled = true;
+    importMod(fileName, text, (r) => {
+      if (r.error) return show(r.error);
+      $("install-dialog").close();
+      history.replaceState(null, "", location.pathname);
+      $("mods-section").scrollIntoView({ block: "start" });
+    });
+  };
+}
+if (installUrl) offerInstall(installUrl);

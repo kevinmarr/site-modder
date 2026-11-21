@@ -67,7 +67,21 @@ the side panel, or not at all:
 - Browser tools with agents other than Claude Agent and Codex (only those two
   were tried), including whether screenshots reach the model.
 
-## 4. Chrome Web Store
+## 4. Mods
+
+- **Updates for imported mods:** scripts from Greasy Fork and similar have
+  `@updateURL`/`@downloadURL`. Check them, offer the update in Settings, and
+  stop once the agent or the user has edited the file.
+- **`unsafeWindow`** in isolated scripts is the isolated `window`, not the
+  page's. Scripts that grant GM functions and also read page globals need
+  `@inject-into page`, where those GM functions don't work.
+- **More of the GM API:** `GM_download`, `GM_cookie`, `GM_getTab`/`GM_saveTab`,
+  `GM_webRequest`; forbidden request headers in `GM_xmlhttpRequest` (needs
+  `declarativeNetRequest`); `GM_notification` click callbacks.
+- **UserCSS:** `@var` values are fixed at their defaults. Settings could let
+  you change them. Preprocessors (Stylus, Less) aren't supported.
+
+## 5. Chrome Web Store
 
 - Store icon and promo images from the Eyepatch mark.
 - Store listing, screenshots, privacy disclosures, and justifications for the

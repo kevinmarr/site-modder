@@ -16,6 +16,7 @@ body { overflow: hidden; }
 .model-menu .back > .icon { color: var(--text-faint); }
 .menu-item .check { margin-left: auto; color: var(--text); }
 .menu-item > .icon { color: var(--text-muted); }
+.menu-item.command { padding-left: 22px; color: var(--text-muted); } /* a mod's own commands, under its row */
 
 /* Agent logos are monochrome SVGs from the registry; make them follow the text color. */
 .agent-logo { width: 18px; height: 18px; flex: none; display: block; }

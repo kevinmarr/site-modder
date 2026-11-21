@@ -32,7 +32,7 @@ const state = {
 
 const REPLY = `# Readable contents
 
-The table of contents now sits in the *left margin*, and the current section is **highlighted** as you scroll. The styles are in \`substack-readable-toc/mod.css\`; turn it off any time from the menu or in [Settings](https://example.com/settings).
+The table of contents now sits in the *left margin*, and the current section is **highlighted** as you scroll. The styles are in \`substack-readable-toc.user.css\`; turn it off any time from the menu or in [Settings](https://example.com/settings).
 
 ## Breakpoints
 
@@ -85,11 +85,11 @@ const TRANSCRIPT = [
   ...tool("t1", "mcp__eyepatch__get_page_content", "other", 10),
   ...tool("t2", "mcp__eyepatch__query_selector_all", "other", 13, { rawInput: { selector: "nav.toc" } }),
   ...tool("t3", "Create mod `substack-readable-toc`", "edit", 16),
-  ...tool("t4", "Edit `mod.css`", "edit", 19, {
-    content: [{ type: "diff", path: "mod.css", oldText: ".toc-gutter a { color: inherit; }\n.toc-gutter { width: 180px; }", newText: ".toc-gutter a { color: inherit; opacity: .6; }\n.toc-gutter a.active { opacity: 1; font-weight: 600; }\n.toc-gutter { width: 180px; }" }],
+  ...tool("t4", "Edit `substack-readable-toc.user.css`", "edit", 19, {
+    content: [{ type: "diff", path: "substack-readable-toc.user.css", oldText: ".toc-gutter a { color: inherit; }\n.toc-gutter { width: 180px; }", newText: ".toc-gutter a { color: inherit; opacity: .6; }\n.toc-gutter a.active { opacity: 1; font-weight: 600; }\n.toc-gutter { width: 180px; }" }],
   }),
   ...tool("t5", "Run `npm test`", "execute", 22, { status: "failed", rawOutput: "FAIL mod.test.js\n  ✕ highlights the visible section (12 ms)\n\nTests: 1 failed, 3 passed" }),
-  ...tool("t6", "Edit `mod.js`", "edit", 26),
+  ...tool("t6", "Edit `substack-toc-highlight.user.js`", "edit", 26),
   ...tool("t7", "Run `npm test`", "execute", 29, { rawOutput: "PASS mod.test.js\nTests: 4 passed" }),
   { type: "permission_request", at: at(32), id: "p1", toolCall: { title: "mcp__eyepatch__run_js", rawInput: { code: "return [...document.querySelectorAll('.toc-gutter a')].length;" } }, options: [{ optionId: "a", name: "Allow", kind: "allow_once" }, { optionId: "b", name: "Always allow in this chat", kind: "allow_always" }, { optionId: "c", name: "Deny", kind: "reject_once" }] },
   { type: "permission_resolved", at: at(35), id: "p1", option: { name: "Allow", kind: "allow_once" } },
@@ -124,7 +124,7 @@ export function connect() {
     let t = 600;
     later(t, () => event({ type: "session_update", update: { sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "Checking what's on the page before changing it." } } }));
     t += 1500;
-    for (const [id, title, kind] of [["n1", "mcp__eyepatch__get_page_content", "other"], ["n2", "mcp__eyepatch__query_selector_all", "other"], ["n3", "Edit `mod.css`", "edit"], ["n4", "Edit `mod.js`", "edit"], ["n5", "mcp__eyepatch__reload_tab", "other"]]) {
+    for (const [id, title, kind] of [["n1", "mcp__eyepatch__get_page_content", "other"], ["n2", "mcp__eyepatch__query_selector_all", "other"], ["n3", "Edit `substack-readable-toc.user.css`", "edit"], ["n4", "Edit `substack-toc-highlight.user.js`", "edit"], ["n5", "mcp__eyepatch__reload_tab", "other"]]) {
       later(t, () => event({ type: "session_update", update: { sessionUpdate: "tool_call", toolCallId: id + t, title, kind, status: "in_progress" } }));
       t += 1200;
       later(t, () => event({ type: "session_update", update: { sessionUpdate: "tool_call_update", toolCallId: id + (t - 1200), status: "completed" } }));

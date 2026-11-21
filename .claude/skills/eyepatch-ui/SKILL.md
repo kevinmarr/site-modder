@@ -93,7 +93,8 @@ use stroke 1.75: 18 px for actions, 15 px in tool rows, 14 px inline.
   modify?" centered above the message box; idea `.chip`s (with icons) sit just
   above the box.
 - **More menu** (`.menu`): Settings first, then "Mods on this page" (with
-  `.switch`es, an off mod greyed) and "Recent chats" (title and time), ending
+  `.switch`es, an off mod greyed, and each mod's own menu commands as indented
+  muted `.menu-item.command` rows under it) and "Recent chats" (title and time), ending
   with "All chats". Groups have a `.menu-label` and a hairline between them.
   Menus can be nearly as tall as the panel.
 - **Agent switcher:** agents with logo tiles (`.tile.sm`) and a check on the
@@ -129,8 +130,13 @@ use stroke 1.75: 18 px for actions, 15 px in tool rows, 14 px inline.
   `.progress` bar; failures show the reason and "Try again".
 - **Mods:** grouped by site (`.group-title`, 16 px, globe icon) with
   `.group-items` indented under the name. Each mod: name, one-line
-  description, `.switch.lg`, and a trash icon button. Broken mods are listed
-  first under a red "Not running" group with their error.
+  description, `.switch.lg`, then icon buttons for export (`download`), show
+  in folder (`folder-open`) and delete (`trash-2`). Broken mods are listed
+  first under a red "Not running" group with their error. An "Import a mod"
+  `.add-row` ends the section.
+- **Install dialog** (opening a `.user.js`/`.user.css` URL): a `.dialog` with
+  the mod's name, description, a `dl` of Version / Runs on / Uses / Can reach /
+  From, then a quiet "Cancel" and a primary "Install".
 - **Confirmations are inline:** the row becomes a `.confirm` band with the
   consequence, a quiet "Cancel" and a `.btn.danger`.
 

@@ -8,6 +8,7 @@ import type { ToolSocket } from "./tool-socket.js";
 import { HOME, MODS_DIR } from "./config.js";
 import type { ExtensionSocket, FromExtension, PageInfo, PickedElement, PromptImage } from "./extension-socket.js";
 import { modApplies } from "./match.js";
+import { isModFile } from "./modfile.js";
 import { loadMods, type Mod } from "./mods.js";
 
 /**
@@ -82,18 +83,15 @@ async function pageContext(page: PageInfo) {
   const lines = [`<active-tab url="${attr(page.url)}" title="${attr(page.title ?? "")}" />`];
   let mods: Mod[] = [];
   try {
-    mods = (await loadMods()).filter((m) => m.matches.length && modApplies(m, page.url!));
+    mods = (await loadMods()).filter((m) => (m.matches.length || m.filter) && modApplies(m, page.url!));
   } catch (e) {
     console.error("[chats] could not load mods for context:", e);
   }
   if (mods.length) {
     lines.push("<mods-on-this-page>");
     for (const m of mods) {
-      const files = ["mod.json", m.css !== undefined && "mod.css", m.js !== undefined && "mod.js"].filter(Boolean);
-      const flags = [!m.enabled && "disabled", m.error && `error: ${m.error}`].filter(Boolean);
-      lines.push(
-        `  ${m.id}/ — ${m.name}${m.description ? `: ${m.description}` : ""} (${files.join(", ")})${flags.length ? ` [${flags.join("; ")}]` : ""}`,
-      );
+      const flags = [!m.enabled && "disabled", m.error && `error: ${m.error}`, ...(m.warnings ?? [])].filter(Boolean);
+      lines.push(`  ${m.id} — ${m.name}${m.description ? `: ${m.description}` : ""}${flags.length ? ` [${flags.join("; ")}]` : ""}`);
     }
     lines.push("</mods-on-this-page>");
   } else {
@@ -112,13 +110,12 @@ function pickedContext(elements: PickedElement[]) {
   return `The user picked ${elements.length === 1 ? "this element" : "these elements"} on the page:\n${parts.join("\n")}\n\n`;
 }
 
-/** The mod a file path belongs to, if it's inside the mods dir. */
+/** The mod a file path is, if it's a mod file in the mods dir. */
 function modIdOf(file: unknown): string | null {
   if (typeof file !== "string") return null;
   const rel = path.relative(MODS_DIR, path.resolve(MODS_DIR, file));
-  if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
-  const [id, ...rest] = rel.split(path.sep);
-  return rest.length ? id : null;
+  if (rel.startsWith("..") || path.isAbsolute(rel) || rel.includes(path.sep)) return null;
+  return isModFile(rel) ? rel : null;
 }
 
 /** Merge streamed chunks so saved history stays small. */

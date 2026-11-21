@@ -2,7 +2,7 @@ import { AgentManager } from "./agents.js";
 import { Chats } from "./chats.js";
 import { ExtensionSocket } from "./extension-socket.js";
 import { EXTENSION_DIR, MODS_DIR, PORT } from "./config.js";
-import { deleteMod, revealMod, ensureModsDir, loadMods, setModEnabled, watchDir, watchMods } from "./mods.js";
+import { deleteMod, ensureModsDir, importMod, loadMods, readModFile, revealMod, setModEnabled, watchDir, watchMods } from "./mods.js";
 import { ToolSocket } from "./tool-socket.js";
 
 await ensureModsDir();
@@ -19,8 +19,8 @@ const chats = new Chats(extension, agents, tools);
  * JS changes reload `reloadTabs`, or every matching tab when that's null.
  */
 async function applyMods(changed: string[], reloadTabs: number[] | null) {
-  const mods = await loadMods();
   if (!extension.connected) return;
+  const mods = await loadMods({ assets: true });
   const { errors } = await extension.call<{ errors: Record<string, string> }>(
     "apply_mods",
     { mods, changed, reloadTabs },
@@ -37,11 +37,25 @@ function pushMods(changed: string[] = [], reloadTabs: number[] | null = null) {
 extension.onConnect(() => pushMods());
 // User scripts were just allowed: register every mod and reload the tabs it applies to.
 extension.on((msg) => {
+  const fail = (id: string) => (e: Error) => console.error(`[mods] ${id}:`, e.message);
   if (msg.type === "sync_mods") void loadMods().then((mods) => pushMods(mods.map((m) => m.id)));
-  // From the side panel or Options page. The mods watcher applies the change.
-  if (msg.type === "mod_set_enabled") setModEnabled(msg.id, msg.enabled).catch((e) => console.error(`[mods] ${msg.id}:`, e.message));
-  if (msg.type === "mod_delete") deleteMod(msg.id).catch((e) => console.error(`[mods] ${msg.id}:`, e.message));
-  if (msg.type === "mod_reveal") revealMod(msg.id).catch((e) => console.error(`[mods] ${msg.id}:`, e.message));
+  // From the side panel or Options page. The on/off state isn't in the mod's
+  // file, so apply it here; the mods watcher applies the rest.
+  if (msg.type === "mod_set_enabled") setModEnabled(msg.id, msg.enabled).then(() => pushMods([msg.id]), fail(msg.id));
+  if (msg.type === "mod_delete") deleteMod(msg.id).catch(fail(msg.id));
+  if (msg.type === "mod_reveal") revealMod(msg.id).catch(fail(msg.id));
+  if (msg.type === "mod_export") {
+    readModFile(msg.id).then(
+      (content) => extension.send({ type: "options_event", event: { type: "mod_file", id: msg.id, content } }),
+      fail(msg.id),
+    );
+  }
+  if (msg.type === "mod_import") {
+    importMod(msg.fileName, msg.content).then(
+      (id) => extension.send({ type: "options_event", event: { type: "mod_imported", requestId: msg.requestId, id } }),
+      (e: Error) => extension.send({ type: "options_event", event: { type: "mod_imported", requestId: msg.requestId, error: e.message } }),
+    );
+  }
 });
 watchMods((ids) => {
   console.log(`[mods] changed: ${ids.join(", ")}`);

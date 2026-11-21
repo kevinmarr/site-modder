@@ -48,6 +48,17 @@
 .row .sub.danger { white-space: normal; }
 .row .main .sub { overflow: hidden; text-overflow: ellipsis; }
 .confirm .actions { display: flex; gap: 8px; flex: none; }
+#mods-section .add-row { margin-top: 12px; }
+.mods-status:empty { display: none; }
+.mods-status { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+
+/* Install a mod from the web */
+.install-body { outline: none; padding: 4px 24px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.install-body .name { font-size: 16px; font-weight: 600; }
+.install-body dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: var(--fs-ui); }
+.install-body dt { color: var(--text-muted); }
+.install-body dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.install-body .actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* Add an agent */
 .dialog[open] { display: flex; flex-direction: column; }

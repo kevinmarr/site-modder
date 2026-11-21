@@ -41,11 +41,11 @@ const full = {
     opencode: { agent: "OpenCode", state: "authenticated", accounts: [{ label: "OpenRouter API key" }], methods: [] },
   },
   mods: [
-    { id: "substack-readable-toc", name: "Substack: legible table of contents", description: "Moves the contents into the margin and highlights the current section", enabled: true, matches: ["*://*.substack.com/*"] },
-    { id: "substack-hide-subscribe", name: "Hide in-article subscribe prompts", description: "Removes the subscribe boxes between paragraphs", enabled: false, matches: ["*://*.substack.com/*"] },
-    { id: "kl-wine-searcher", name: "K&L: Wine-Searcher links", description: "Adds a Wine-Searcher link after each bottle", enabled: true, matches: ["*://www.klwines.com/*"] },
-    { id: "github-collapse-sidebar", name: "GitHub: collapse PR sidebar", description: "Hides the sidebar on pull requests until you hover", enabled: true, matches: ["https://github.com/*/pull/*"] },
-    { id: "hn-hide-sidebar", name: "Hacker News: hide sidebar", error: "mod.json needs a matches list", enabled: true, matches: [] },
+    { id: "substack-readable-toc.user.css", site: "substack.com", name: "Substack: legible table of contents", description: "Moves the contents into the margin and highlights the current section", enabled: true, matches: ["*://*.substack.com/*"] },
+    { id: "substack-hide-subscribe.user.css", site: "substack.com", name: "Hide in-article subscribe prompts", description: "Removes the subscribe boxes between paragraphs", enabled: false, matches: ["*://*.substack.com/*"] },
+    { id: "kl-wine-searcher.user.js", site: "klwines.com", name: "K&L: Wine-Searcher links", description: "Adds a Wine-Searcher link after each bottle", enabled: true, matches: ["*://www.klwines.com/*"] },
+    { id: "github-collapse-sidebar.user.js", site: "github.com", name: "GitHub: collapse PR sidebar", description: "Hides the sidebar on pull requests until you hover", enabled: true, matches: ["https://github.com/*/pull/*"] },
+    { id: "hn-hide-sidebar.user.js", name: "Hacker News: hide sidebar", error: "needs at least one @match or @include", enabled: true, matches: [] },
   ],
 };
 

@@ -393,7 +393,12 @@ function renderMoreMenu() {
         .map(
           (m) =>
             `<div class="menu-item${m.enabled ? "" : " off"}" title="${esc(m.description ?? "")}"><span class="grow">${esc(m.name)}</span>` +
-            `<button type="button" class="switch" role="switch" aria-checked="${m.enabled}" aria-label="${esc(m.name)}" data-mod="${esc(m.id)}"></button></div>`,
+            `<button type="button" class="switch" role="switch" aria-checked="${m.enabled}" aria-label="${esc(m.name)}" data-mod="${esc(m.id)}"></button></div>` +
+            // The mod's own commands (GM_registerMenuCommand).
+            (m.enabled ? (state.menuCommands ?? []) : [])
+              .filter((c) => c.modId === m.id)
+              .map((c) => `<button type="button" class="menu-item command" role="menuitem" data-command="${esc(c.id)}" data-command-mod="${esc(m.id)}"><span class="grow">${esc(c.caption)}</span></button>`)
+              .join(""),
         )
         .join("") +
       `</div>`;
@@ -417,6 +422,12 @@ $("more-menu").addEventListener("click", (e) => {
     sw.setAttribute("aria-checked", String(enabled));
     sw.closest(".menu-item").classList.toggle("off", !enabled);
     port.postMessage({ type: "mod_set_enabled", id: sw.dataset.mod, enabled });
+    return;
+  }
+  const cmd = e.target.closest("[data-command]");
+  if (cmd) {
+    setMenu(null);
+    port.postMessage({ type: "menu_command", modId: cmd.dataset.commandMod, id: cmd.dataset.command });
     return;
   }
   const t = e.target.closest("[data-action], [data-session]");

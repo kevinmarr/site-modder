@@ -29,6 +29,9 @@
       <section id="mods-section" class="section" aria-labelledby="mods-h" hidden>
         <h2 id="mods-h">Mods</h2>
         <div id="mods" class="mod-groups"></div>
+        <div id="mods-status" class="mods-status"></div>
+        <button id="import-btn" type="button" class="row add-row"><span class="tile add-tile"><svg data-icon="plus"></svg></span><span class="main"><span class="name">Import a mod</span></span></button>
+        <input id="import-file" type="file" accept=".js,.css" multiple hidden />
       </section>
     </main>
 
@@ -39,6 +42,13 @@
       </div>
       <div class="dialog-search"><label class="search"><svg data-icon="search" data-size="16"></svg><input id="add-filter" type="search" placeholder="Search agents" aria-label="Search agents" /></label></div>
       <div id="add-list" class="add-list" role="list"></div>
+    </dialog>
+    <dialog id="install-dialog" class="dialog" aria-labelledby="install-h">
+      <div class="dialog-head">
+        <h2 id="install-h">Install mod</h2>
+        <button id="install-close" type="button" class="icon-btn" aria-label="Close"><svg data-icon="x"></svg></button>
+      </div>
+      <div id="install-body" class="install-body" tabindex="-1" autofocus></div>
     </dialog>
     <script src="options.js" type="module"></script>
   </body>

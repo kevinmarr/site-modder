@@ -83,7 +83,7 @@ Messages alternate between the user and the agent. A turn can include:
 - **Thinking:** some agents share their reasoning as text before answering.
   It should be available but out of the way (collapsed by default).
 - **Tool calls:** the agent's actions, often 5–20 per turn, interleaved with
-  its text. Each has a short title ("Read mod.css", "Edit mod.js",
+  its text. Each has a short title ("Read github-dark.user.css", "Edit hn-tweaks.user.js",
   "get_page_content", "screenshot", "Run `npm test`") and a status: pending,
   running, done or failed. Some have details (file path, the edit as a diff,
   command output, a screenshot) that are worth viewing but shouldn't crowd the
@@ -133,8 +133,8 @@ Shown above the conversation, until resolved:
   the settings page at that agent.
 - Chrome's "Allow User Scripts" switch is off (mods can't run without it), with
   an action that opens Chrome's extension settings.
-- A mod has an error and isn't running ("Mod hide-sidebar isn't running:
-  mod.json needs a matches list").
+- A mod has an error and isn't running ("Mod hide-sidebar.user.js isn't
+  running: needs at least one @match or @include").
 
 ### No agent installed yet
 
@@ -191,9 +191,14 @@ retry.
 ### Mods
 
 Every mod, grouped by site (e.g. "substack.com", "klwines.com"). Each shows its
-name, a one-line description, an on/off switch and **Delete** (with
-confirmation). Mods with errors are listed separately with the error. Typical
-counts: a few to a few dozen.
+name, a one-line description, an on/off switch, **Export**, **Show in folder**
+and **Delete** (with confirmation). Mods with errors are listed separately
+with the error. Typical counts: a few to a few dozen. Below the list, **Import
+a mod** takes userscripts (`.user.js`) and UserCSS styles (`.user.css`).
+
+Opening a `.user.js` or `.user.css` URL opens Settings with an install dialog:
+the mod's name and description, the sites it runs on, the GM functions it uses
+and the hosts it can reach, and Install / Cancel.
 
 ## 3. Toolbar button
 
